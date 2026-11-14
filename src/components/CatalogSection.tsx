@@ -1,6 +1,7 @@
 import { ArrowRight, Loader2, Plus, Search, SlidersHorizontal, Wand2, X } from 'lucide-react';
 import { FormEvent, useMemo, useState } from 'react';
 import { CustomerSegment, Product, ProductCategory, SeriesType } from '../types/store';
+import { postApiJson } from '../utils/api';
 import { ProductVisual } from './ProductVisual';
 
 interface CatalogSectionProps {
@@ -76,16 +77,10 @@ export function CatalogSection({
     setKitLoading(true);
     setKitError(null);
     try {
-      const res = await fetch('/api/ai/recommend-kit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: trimmed }),
+      const data = await postApiJson<AiKitRecommendation>('/api/ai/recommend-kit', {
+        prompt: trimmed,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error || 'Could not generate kit recommendation.');
-      }
-      setKitResult(data as AiKitRecommendation);
+      setKitResult(data);
     } catch (err) {
       setKitError(err instanceof Error ? err.message : 'Unable to reach AI Kit Finder.');
     } finally {

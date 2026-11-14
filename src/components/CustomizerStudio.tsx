@@ -23,6 +23,7 @@ import {
   TextFont,
   TextLayout,
 } from '../types/store';
+import { postApiJson } from '../utils/api';
 import { ProductVisual } from './ProductVisual';
 
 export interface CustomizerState {
@@ -44,6 +45,20 @@ interface CustomizerStudioProps {
   onChange: (next: CustomizerState) => void;
   onAddCustomToCart: (item: CartItem) => void;
   justAdded: boolean;
+}
+
+interface AiBuildResponse {
+  category: ProductCategory;
+  protectionTier: ProtectionTier;
+  shellColorId: string;
+  accentColorId: string;
+  pattern: PatternType;
+  stamp: GraphicStamp;
+  engraving: string;
+  textLayout: TextLayout;
+  textFont: TextFont;
+  buildTitle: string;
+  rationale: string;
 }
 
 const DEVICE_CATEGORIES: ProductCategory[] = ['Phones', 'Earbuds', 'Laptops', 'Bottles'];
@@ -83,31 +98,26 @@ export function CustomizerStudio({
     setAiLoading(true);
     setAiError(null);
     try {
-      const res = await fetch('/api/ai/design-build', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: trimmed, category: state.category }),
+      const data = await postApiJson<AiBuildResponse>('/api/ai/design-build', {
+        prompt: trimmed,
+        category: state.category,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error || 'Could not generate AI build.');
-      }
 
-      const nextCategory = (data.category as ProductCategory) || state.category;
+      const nextCategory = data.category || state.category;
       const nextModel =
         nextCategory === state.category ? state.deviceModel : DEVICE_MODELS[nextCategory][0];
 
       onChange({
         category: nextCategory,
         deviceModel: nextModel,
-        protectionTier: (data.protectionTier as ProtectionTier) || 'Bounce',
+        protectionTier: data.protectionTier || 'Bounce',
         shellColorId: data.shellColorId,
         accentColorId: data.accentColorId,
         pattern: data.pattern,
-        stamp: (data.stamp as GraphicStamp) || 'Bolt',
+        stamp: data.stamp || 'Bolt',
         engraving: (data.engraving ?? '').slice(0, 12),
-        textLayout: (data.textLayout as TextLayout) || 'Diagonal',
-        textFont: (data.textFont as TextFont) || 'Display',
+        textLayout: data.textLayout || 'Diagonal',
+        textFont: data.textFont || 'Display',
         presetName: null,
       });
       setAiRationale({ title: data.buildTitle, rationale: data.rationale });

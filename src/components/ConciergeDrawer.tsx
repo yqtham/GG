@@ -1,5 +1,6 @@
 import { Loader2, MessageSquare, Send, X } from 'lucide-react';
 import { FormEvent, useState } from 'react';
+import { postApiJson } from '../utils/api';
 
 interface ConciergeMessage {
   role: 'user' | 'assistant';
@@ -42,15 +43,9 @@ export function ConciergeDrawer({ isOpen, onClose }: ConciergeDrawerProps) {
     setError(null);
 
     try {
-      const res = await fetch('/api/ai/concierge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: nextMessages }),
+      const data = await postApiJson<{ reply: string }>('/api/ai/concierge', {
+        messages: nextMessages,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error || 'Concierge request failed.');
-      }
       setMessages([...nextMessages, { role: 'assistant', content: data.reply }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to connect to Gear Specialist.');
